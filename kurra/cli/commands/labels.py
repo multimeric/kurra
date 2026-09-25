@@ -3,7 +3,7 @@ from pathlib import Path
 import typer
 
 from kurra.cli.console import console
-from kurra.labels import find_missing_labels, get_missing_labels
+from kurra.labels import find_missing_labels, get_labels
 
 app = typer.Typer(help="Labelling commands")
 from rich.table import Table
@@ -86,9 +86,9 @@ def get_command(
 
     if iris:
         if Path(additional_context).is_file() or Path(additional_context).is_dir():
-            rdf = get_missing_labels(iris, Path(additional_context, return_type))
+            rdf = get_labels(iris, Path(additional_context, return_type))
         else:
-            rdf = get_missing_labels(iris, additional_context, return_type)
+            rdf = get_labels(iris, additional_context, return_type)
 
         if return_type == "graph":
             console.print(rdf.serialize(format="longturtle"))
