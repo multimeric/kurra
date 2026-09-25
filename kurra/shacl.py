@@ -102,14 +102,14 @@ def validate(
     data_graph = None
     shapes_graph = None
 
-    def _get_shapes_from_iri(iri):
+    def _get_shapes_from_iri(iri: str):
         local_validators = list_local_validators()
         for local_validator in local_validators.keys():
             if iri == local_validator:
                 cv = _load_pickle(validators_cache)
                 return cv.graph(URIRef(iri))
 
-    def _get_shapes_from_id(id):
+    def _get_shapes_from_id(id: str| int):
         id = int(id)
         local_validators = list_local_validators()
         max = len(local_validators.keys())
@@ -164,7 +164,7 @@ def validate(
     return tf, g, msg, _summarize_validation_results(g)
 
 
-def list_local_validators() -> dict[str, dict[str, int]] | None:
+def list_local_validators() -> dict[str, dict[str, int]]:
     """Lists SHACL validators - IRI & name - stored in the local system's calidator cache.
 
     This function does not connect over the Internet."""
@@ -220,7 +220,7 @@ def sync_validators(http_client: httpx.Client | None = None):
           <https://data.kurrawong.ai/sb/validators> schema:hasPart ?p
         }
         """
-    r = query(semback_sparql_endpoint, q, None, http_client, "python", True)
+    r = query(semback_sparql_endpoint, q, http_client=http_client, return_format="python", return_bindings_only=True)
 
     remote_validators = [row["p"] for row in r]
 

@@ -2,26 +2,26 @@
 from either KurrawongAI's 'Semantic Background' dataset or other, provided, context."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Iterable, Literal, overload
 
 import httpx
-from rdflib import DCTERMS, RDFS, SDO, SKOS, BNode, Graph, URIRef
+from rdflib import DCTERMS, RDFS, SDO, SKOS, Graph, URIRef
 
 from kurra.sparql import query
 from kurra.utils import load_graph
 
 
 def find_missing_labels(
-    p: Path | str | Graph, local_context: Path | Graph = None
-) -> set[URIRef]:
+    p: Path | str | Graph, local_context: Path | Graph | None = None
+) -> Iterable[URIRef]:
     """Finds all the IRIs in a graph missing labels.
 
     If local_context is supplied - and it must be a Path to an RDF file or directory of RDF files or a Graph - then labels from that context will be used too."""
 
     # find all the things missing labels
-    subjects_missing_labels = set()
-    predicates_missing_labels = set()
-    objects_missing_labels = set()
+    subjects_missing_labels: set[URIRef] = set()
+    predicates_missing_labels: set[URIRef] = set()
+    objects_missing_labels: set[URIRef] = set()
     g = load_graph(p)
 
     for s in g.subjects():
@@ -34,7 +34,7 @@ def find_missing_labels(
         elif g.value(subject=s, predicate=SKOS.prefLabel):
             continue
 
-        if not isinstance(s, BNode):
+        if isinstance(s, URIRef):
             subjects_missing_labels.add(s)
 
     for s in g.predicates():
@@ -47,7 +47,7 @@ def find_missing_labels(
         elif g.value(subject=s, predicate=SKOS.prefLabel):
             continue
 
-        if not isinstance(s, BNode):
+        if isinstance(s, URIRef):
             predicates_missing_labels.add(s)
 
     for s in g.objects():
@@ -68,7 +68,7 @@ def find_missing_labels(
     )
 
     if local_context is not None:
-        tx = set()
+        tx : set[URIRef] = set()
 
         c = load_graph(local_context)
         for t in things_missing_labels:
@@ -79,11 +79,29 @@ def find_missing_labels(
         return sorted(things_missing_labels)
 
 
+@overload
+def get_missing_labels(
+    iris: list[URIRef],
+    context: Graph | str | Path = "https://fuseki.dev.kurrawong.ai/semback/sparql",
+    return_type: Literal["graph"] = "graph",
+    http_client: httpx.Client | None = None,
+) -> Graph:
+    ...
+
+@overload
+def get_missing_labels(
+    iris: list[URIRef],
+    context: Graph | str | Path,
+    return_type: Literal["dict"],
+    http_client: httpx.Client | None = None,
+) -> dict[URIRef, str]:
+    ...
+
 def get_missing_labels(
     iris: list[URIRef],
     context: Graph | str | Path = "https://fuseki.dev.kurrawong.ai/semback/sparql",
     return_type: Literal["graph", "dict"] = "graph",
-    http_client: httpx.Client = None,
+    http_client: httpx.Client | None = None,
 ) -> Graph | dict[URIRef, str]:
     """Gets labels for given IRIs from a given context"""
     values = ""
@@ -100,6 +118,8 @@ def get_missing_labels(
         """
 
     if return_type == "graph":
+        if http_client is None:
+            raise ValueError("http_client must be provided when return_type is 'graph'")
         q = f"""
             PREFIX schema: <https://schema.org/>
             
@@ -126,3 +146,16 @@ def get_missing_labels(
         ):
             d[r["iri"]] = r["label"]
         return d
+
+def jsonld_context(
+        graph: Graph,
+        vocabulary: Graph
+) -> dict[str, str]:
+    """Creates a JSON-LD context for a given graph and vocabulary"""
+    context = {}
+    for s in graph.subjects():
+        if isinstance(s, URIRef):
+            label = vocabulary.value(subject=s, predicate=RDFS.label)
+            if label is not None:
+                context[label] = str(s)
+    return context
