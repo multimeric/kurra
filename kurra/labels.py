@@ -146,16 +146,3 @@ def get_missing_labels(
         ):
             d[r["iri"]] = r["label"]
         return d
-
-def jsonld_context(
-        graph: Graph,
-        vocabulary: Graph
-) -> dict[str, str]:
-    """Creates a JSON-LD context for a given graph and vocabulary"""
-    context = {}
-    for s in graph.subjects():
-        if isinstance(s, URIRef):
-            label = vocabulary.value(subject=s, predicate=RDFS.label)
-            if label is not None:
-                context[label] = str(s)
-    return context
