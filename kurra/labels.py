@@ -55,7 +55,7 @@ def get_labels(
     context: Graph | str | Path = "https://fuseki.dev.kurrawong.ai/semback/sparql",
     return_type: Literal["graph", "dict"] = "graph",
     http_client: httpx.Client = None,
-) -> Graph | dict[URIRef, str]:
+) -> Graph | dict[str, str]:
     """Gets labels for given IRIs from a given context"""
     iri_values_clause = build_values_clause({"iri": iris})
     predicate_values_clause = build_values_clause(
@@ -105,9 +105,9 @@ def jsonld_context(
     """Creates a JSON-LD context for a given graph and vocabulary"""
     result = {}
     all_iris = list(iter_iris(graph))
-    label_dict = cast(dict[URIRef, str], get_labels(all_iris, vocabulary, return_type="dict"))
+    label_dict = cast(dict[str, str], get_labels(all_iris, vocabulary, return_type="dict"))
     for iri, label in label_dict.items():
-        is_type = is_class(graph, iri)
+        is_type = is_class(graph, URIRef(iri)) or is_class(vocabulary, URIRef(iri))
 
         # Create a label that is camelCase if it's a property and PascalCase if it's a class
         label_parts = [part.capitalize() for part in re.split(r"[^a-zA-Z0-9]", label)]

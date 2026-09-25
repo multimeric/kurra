@@ -24,7 +24,7 @@ def test_get_missing_labels():
     )
 
     assert type(rdf) == Graph
-    assert len(rdf) == 29
+    assert len(rdf) == 32
 
     rdf = get_labels(
         find_missing_labels(Path(__file__).parent / "GeologicMaterialTypes.ttl"),
@@ -32,7 +32,7 @@ def test_get_missing_labels():
     )
 
     assert type(rdf) == dict
-    assert len(rdf.keys()) == 29
+    assert len(rdf.keys()) == 32
 
 
 def test_jsonld_context_pascal_and_camel_case():
